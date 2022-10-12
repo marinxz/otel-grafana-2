@@ -1,0 +1,54 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: loki
+  - name: tempo
+  - name: Tempo
+
+
+datasources:
+#  - name: gdev-jaeger
+#    type: jaeger
+#    uid: gdev-jaeger
+#    access: proxy
+#    url: http://jaeger-host:16686
+#    editable: false
+#    Timeout: 90
+#    isDefault: true
+#    jsonData:
+#      timeout: 90
+
+  - name: loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki-host:3100
+    editable: false
+    jsonData:
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: trace_id=(\w+)
+          name: "TraceID"
+          url: "$${__value.raw}"
+        - datasourceUid: tempo
+          matcherRegex: span_id=(\w+)
+          name: "SpanID"
+          url: "$${__value.raw}"
+
+  - name: tempo
+    type: tempo
+    uid: tempo
+    access: browser
+    orgId: 1
+    url: http://tempo-host:3200
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    apiVersion: 1
+    jsonData: {
+      tracesToLogs: {
+        datasourceUid: 'loki',
+        tags: ['app'],
+      },
+    }

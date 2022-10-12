@@ -1,0 +1,6 @@
+.idea
+__pycache__
+venv/
+/transparenzregister/local_wheels/**
+/venv2/
+/tempo/tempo-data/

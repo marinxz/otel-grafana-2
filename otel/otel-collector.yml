@@ -1,0 +1,32 @@
+receivers:
+  otlp:
+
+exporters:
+  loki:
+    endpoint: https://172.18.0.4:3100/loki/api/v1/push
+
+processors:
+  attributes:
+    actions:
+    - action: insert
+      key: loki.attribute.labels
+      value: http.status_code
+
+  resource:
+    attributes:
+    - action: insert
+      key: loki.attribute.labels
+      value: http.status
+    - action: insert
+      key: loki.resource.labels
+      value: host.name, pod.name
+
+extensions:
+
+service:
+  extensions:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [resource, attributes]
+      exporters: [loki]

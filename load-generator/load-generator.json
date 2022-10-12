@@ -1,0 +1,65 @@
+{
+  "topology" : {
+    "services" : [
+      {
+        "serviceName" : "poke-mart",
+        "instances" : [ "viridian-d847fdcf5-j6s2f", "pallet-79d8c8d6c8-9sbff" ],
+        "tagSets" : [
+          { "weight": 2, "tags": { "generation" : "v1", "region" : "kanto" }, "tagGenerators": [{"numTags": 32, "numVals": 152, "valLength": 64}] },
+          { "tags": { "generation" : "v2", "region" : "johto" }}
+        ],
+        "routes" : [
+          {
+            "route" : "/product",
+            "downstreamCalls" : { "pokemon-center" : "/Recover", "brock" : "/GetRecommendations" },
+            "maxLatencyMillis": 200,
+            "tagSets": [
+              { "weight": 1, "tags": { "starter" : "charmander"}},
+              { "weight": 1, "tags": { "starter" : "squirtle"}},
+              { "weight": 1, "tags": { "starter" : "bulbasaur"}}
+            ]
+          }
+        ]
+      },
+      {
+        "serviceName" : "brock",
+        "instances" : [ "pewter-a347fe1ce-g4sl1"],
+        "tagSets" : [
+          { "tags": { "uselss": true }, "inherit": ["region", "starter"]}
+        ],
+        "routes" : [
+          {
+            "route" : "/GetRecommendations",
+            "downstreamCalls" : { },
+            "maxLatencyMillis": 1000,
+            "tagSets": [
+              { "tags": { "loves" : "jenny"}},
+              { "tags": { "loves" : "joy"}}
+            ]
+          }
+        ]
+      },
+      {
+        "serviceName" : "pokemon-center",
+        "instances" : [ "cerulean-23kn9aajk-lk12d"],
+        "tagSets" : [
+          { "tags": { "generation" : "v1", "region" : "kanto"}, "inherit": ["starter"] }
+        ],
+        "routes" : [
+          {
+            "route" : "/Recover",
+            "downstreamCalls" : { },
+            "maxLatencyMillis": 300
+          }
+        ]
+      }
+    ]
+  },
+  "rootRoutes" : [
+    {
+      "service" : "poke-mart",
+      "route" : "/product",
+      "tracesPerHour" : 120
+    }
+  ]
+}

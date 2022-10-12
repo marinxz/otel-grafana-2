@@ -1,0 +1,19 @@
+receivers:
+  jaeger:
+    protocols:
+      thrift_http:
+exporters:
+  otlp:
+    endpoint: tempo-host:4317
+    tls:
+      insecure: true
+logging:
+
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      exporters: [otlp]
+    logs:
+      receivers: [ otlp ]
+      exporters: [ logging ]
