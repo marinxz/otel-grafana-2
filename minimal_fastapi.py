@@ -54,7 +54,7 @@ def setup_tracer( service_name ):
     #     agent_port=14268,
     # )
 
-    tempo_ip = '172.26.0.2'
+    tempo_ip = '172.22.0.3'
     main_trace_exporter = OTLPSpanExporter(
         endpoint="http://" + tempo_ip + ":4317"
 
@@ -75,7 +75,7 @@ setup_tracer("test-api")
 #   this changes severity to level for the log message level
 logging_loki.emitter.LokiEmitter.level_tag = "level"
 
-loki_ip = '172.26.0.3'
+loki_ip = '172.22.0.2'
 loki_handler = logging_loki.LokiHandler(
     url="http://" + loki_ip + ":3100/loki/api/v1/push",
     tags={ 'app' : 'test-app'},
