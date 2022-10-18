@@ -30,10 +30,10 @@ datasources:
           matcherRegex: \"?trace_id\"?[=:]\"?(\w+)\"?
           name: "TraceID"
           url: "$${__value.raw}"
-        - datasourceUid: tempo
-          matcherRegex: \"?span_id\"?[=:]\"?(\w+)\"?
-          name: "SpanID"
-          url: "$${__value.raw}"
+#        - datasourceUid: tempo
+#          matcherRegex: \"?span_id\"?[=:]\"?(\w+)\"?
+#          name: "SpanID"
+#          url: "$${__value.raw}"
 
   - name: tempo
     type: tempo

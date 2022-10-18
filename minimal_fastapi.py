@@ -54,7 +54,7 @@ def setup_tracer( service_name ):
     #     agent_port=14268,
     # )
 
-    tempo_ip = '172.22.0.3'
+    tempo_ip = '172.21.0.2'
     main_trace_exporter = OTLPSpanExporter(
         endpoint="http://" + tempo_ip + ":4317"
 
@@ -73,9 +73,10 @@ def setup_tracer( service_name ):
 setup_tracer("test-api")
 
 #   this changes severity to level for the log message level
-logging_loki.emitter.LokiEmitter.level_tag = "level"
+#   provjeri ovo
+#   logging_loki.emitter.LokiEmitter.level_tag = "level"
 
-loki_ip = '172.22.0.2'
+loki_ip = '172.21.0.3'
 loki_handler = logging_loki.LokiHandler(
     url="http://" + loki_ip + ":3100/loki/api/v1/push",
     tags={ 'app' : 'test-app'},
@@ -88,7 +89,10 @@ logger = logging.getLogger(__name__)
 stream_handler = logging.StreamHandler(sys.stdout)
 # logging.setLogRecordFactory(record_factory)
 # logger.addHandler(stream_handler)
-formater = logging.Formatter('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d]' +
+# formater = logging.Formatter('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d]' +
+#             '[ trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s app_record_id=%(app_record_id)s ] - %(message)s')
+
+formater = logging.Formatter('%(levelname)s [%(name)s] [%(filename)s:%(lineno)d]' +
             '[ trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s app_record_id=%(app_record_id)s ] - %(message)s')
 loki_handler.setFormatter(formater)
 loki_handler.addFilter(TracingFilter())
