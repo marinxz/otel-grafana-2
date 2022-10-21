@@ -3,7 +3,7 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
 
 def setup_tracer(service_name, app_name, tempo_host):
@@ -18,7 +18,8 @@ def setup_tracer(service_name, app_name, tempo_host):
     tracer_provider = TracerProvider(resource=resource)
 
     main_trace_exporter = OTLPSpanExporter(
-        endpoint="http://" + tempo_host + ":4317"
+        # endpoint="http://" + tempo_host + ":4317"
+        endpoint="http://" + tempo_host + ":4318" + "/v1/traces"
 
     )
 
