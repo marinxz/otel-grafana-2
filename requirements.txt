@@ -5,5 +5,7 @@ opentelemetry-instrumentation-logging
 opentelemetry-exporter-otlp
 # opentelemetry-exporter-jaeger-thrift
 opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-celery
 fastapi
 uvicorn
+celery

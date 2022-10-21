@@ -2,20 +2,21 @@ import logging
 import sys
 import logging_loki
 from logging import LogRecord
+import time
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
 from datetime import datetime
 
 from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource, SERVICE_NAME
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.trace.propagation.tracecontext import \
+    TraceContextTextMapPropagator
+
+from src.telemetry.init_telemetry import init_telemetry_fastapi
+from tasks import add, add_no_error
 
 old_factory = logging.getLogRecordFactory()
 def record_factory(*args, **kwargs):
@@ -35,48 +36,16 @@ class TracingFilter(logging.Filter):
         return True
 
 
-def setup_tracer( service_name ):
-    """
-    This one will try to set up tracer depending on the JAEGER_HOST
-    if that one is not present not defined it presumes it is are operating
-    in the cloud
-    :param service_name:
-    :return:
-    """
-    JAEGER_HOST="172.24.0.4"
-    resource = Resource.create({SERVICE_NAME: service_name, 'app':'test-app' })
-    tracer_provider = TracerProvider(resource=resource)
-    #   Jaeger trace is running locally only
-    # main_trace_exporter = JaegerExporter(
-    #     # agent_host_name="127.0.0.1", "jaeger-host",
-    #     agent_host_name=JAEGER_HOST,
-    #     # agent_port=6831,
-    #     agent_port=14268,
-    # )
+#   update this accordingly
+tempo_host = '172.18.0.2'
+loki_ip = '172.18.0.4'
 
-    tempo_ip = '172.21.0.2'
-    main_trace_exporter = OTLPSpanExporter(
-        endpoint="http://" + tempo_ip + ":4317"
-
-    )
-
-    tracer_provider.add_span_processor(
-        # BatchSpanProcessor buffers spans and sends them in batches in a
-        # background thread. The default parameters are sensible, but can be
-        # tweaked to optimize your performance
-        BatchSpanProcessor(main_trace_exporter)
-    )
-    trace.set_tracer_provider(tracer_provider)
-
-    return
-
-setup_tracer("test-api")
+init_telemetry_fastapi("fastapi-service", 'test-app', tempo_host)
 
 #   this changes severity to level for the log message level
 #   provjeri ovo
 #   logging_loki.emitter.LokiEmitter.level_tag = "level"
 
-loki_ip = '172.21.0.3'
 loki_handler = logging_loki.LokiHandler(
     url="http://" + loki_ip + ":3100/loki/api/v1/push",
     tags={ 'app' : 'test-app'},
@@ -110,7 +79,91 @@ tracer = trace.get_tracer(__name__)
 async def root():
     with tracer.start_as_current_span("message") as sp:
         logger.info('First log in span', {'app_record_id': '12345678' })
+        logger.warning("One warning message")
         logger.info('asda', extra= {'app_record_id': '12345678' })
         logger.info('First log in span no record')
         return {"message": "Hello World"}
 
+@app.get("/test")
+async def test():
+    """
+    just test call to celery
+    :return:
+    """
+    tracer = trace.get_tracer('__name__')
+    print(tracer)
+    with tracer.start_as_current_span("test-span"):
+        logger.info('in test task tracer', {'app_record_id': '2222222' })
+        now = datetime.now()
+        print("Current Time =", now.strftime("%H:%M:%S"))
+        with tracer.start_as_current_span("add-span"):
+            res = add.delay(2,3,'test is parent')
+            logger.info(f"result: {res}")
+    return {"message": "Doing test: " + now.strftime("%H:%M:%S")}
+
+@app.get("/test1")
+async def test1():
+    tracer = trace.get_tracer('__name__')
+    with tracer.start_as_current_span("test-span") as sp:
+        logger.info('in test test1 span')
+
+        trace_id = sp.get_span_context().trace_id
+        print("in test2:", trace_id)
+        now = datetime.now()
+        carrier = {}
+        # Write the current context into the carrier.
+        TraceContextTextMapPropagator().inject(carrier)
+        print("New carrier:", carrier)
+        res = add.delay(2,3,'test is parent', traceparent=carrier['traceparent'])
+        print("result:", res)
+
+    return {"message": "Doing test: " + now.strftime("%H:%M:%S")}
+
+@app.get("/test2")
+async def test2():
+    tracer = trace.get_tracer('__name__')
+    with tracer.start_as_current_span("test-span") as sp:
+        logger.info('in test test1 span')
+
+        trace_id = sp.get_span_context().trace_id
+        print("in test2:", trace_id)
+        now = datetime.now()
+        carrier = {}
+        # Write the current context into the carrier.
+        TraceContextTextMapPropagator().inject(carrier)
+        print("New carrier:", carrier)
+        res = add_no_error.delay(2,3,'test is parent', traceparent=carrier['traceparent'])
+        print("result:", res)
+
+    return {"message": "Doing test 2: " + now.strftime("%H:%M:%S")}
+
+
+@app.get("/test3")
+async def test3(request: Request):
+    tracer = trace.get_tracer('__name__')
+    prop = TraceContextTextMapPropagator()
+    time.sleep(1)
+    logger.info('in test 3')
+    if 'traceparent' in request.headers:
+        print(request.headers['traceparent'])
+
+        carrier = {'traceparent': request.headers['traceparent']}
+        print(carrier)
+        ctx = TraceContextTextMapPropagator().extract(carrier=carrier)
+        print(ctx)
+    else:
+        ctx = None
+
+    with tracer.start_as_current_span("test-span", context=ctx) as sp:
+        trace_id = sp.get_span_context().trace_id
+        logger.info("in test 3 span")
+        print("in test2:", trace_id)
+        now = datetime.now()
+        carrier = {}
+        # Write the current context into the carrier.
+        TraceContextTextMapPropagator().inject(carrier)
+        print("New carrier:", carrier)
+        res = add_no_error.delay(2,3,'test is parent', traceparent=carrier['traceparent'])
+        print("result:", res)
+
+    return {"message": "Doing test with jaeger: " + now.strftime("%H:%M:%S")}

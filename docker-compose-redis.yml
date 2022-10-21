@@ -1,0 +1,21 @@
+version: '3.7'
+
+networks:
+  default:
+    name: sinpex
+
+services:
+  redis:
+    container_name: sinpex_redis
+    restart: on-failure
+    image: redis:6.2.5-buster
+    init: true
+    command: "redis-server --requirepass redis123"
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
