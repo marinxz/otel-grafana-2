@@ -18,7 +18,8 @@ from time import sleep
 logger = logging.getLogger(__name__)
 
 BROKER_URL = 'redis://default:redis123@localhost:6379/1'
-app = Celery('tasks', broker=BROKER_URL)
+RESULT_URL = 'redis://default:redis123@localhost:6379/2'
+app = Celery('tasks', broker=BROKER_URL, backend=RESULT_URL)
 
 @celeryd_init.connect
 def configure_workers(sender=None, conf=None, **kwargs):
@@ -34,7 +35,7 @@ def configure_workers(sender=None, conf=None, **kwargs):
 
 @setup_logging.connect
 def config_loggers(*args, **kwags):
-    loki_ip = '172.18.0.4'
+    loki_ip = '172.18.0.2'
     setup_celery_logger(logger, 'test-app-celery', loki_ip)
     logger.info(f"in setup_logging")
     print("in settup logging")
@@ -42,7 +43,7 @@ def config_loggers(*args, **kwags):
 
 @worker_process_init.connect(weak=False)
 def init_celery_tracing(*args, **kwargs):
-    tempo_host = '172.18.0.2'
+    tempo_host = '172.18.0.4'
     init_telemetry_celery( 'Celery-service', 'test-app-celery', tempo_host)
     CeleryInstrumentor().instrument()
 

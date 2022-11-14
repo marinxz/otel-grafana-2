@@ -8,11 +8,17 @@ case $container in
   'redis')
     docker-compose -f docker-compose-redis.yml up
     ;;
+  'redis-only')
+    docker-compose -f docker-compose-redis.yml up redis 
+    ;;
   'ips')
     echo "loki"
     docker ps -qf "name=loki" | xargs -n 1 docker inspect | grep IPAddress
     echo "tempo"
     docker ps -qf "name=tempo" | xargs -n 1 docker inspect | grep IPAddress
+    echo "redis"
+    docker ps -qf "name=redis" | xargs -n 1 docker inspect | grep IPAddress
+
     ;;
   'down-redis')
     docker-compose -f docker-compose-redis.yml down

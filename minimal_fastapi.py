@@ -37,8 +37,8 @@ class TracingFilter(logging.Filter):
 
 
 #   update this accordingly
-loki_ip = '172.18.0.4'
-tempo_host = '172.18.0.2'
+loki_ip = '172.18.0.2'
+tempo_host = '172.18.0.4'
 
 init_telemetry_fastapi("fastapi-service", 'test-app', tempo_host)
 

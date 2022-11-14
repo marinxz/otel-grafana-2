@@ -11,7 +11,6 @@ services:
         - 3000:3000
       restart: unless-stopped
       volumes:
-#        - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
         - ./grafana/:/etc/grafana/
         - grafana-data:/var/lib/grafana
 
@@ -35,45 +34,10 @@ services:
         - ./tempo/tempo-data:/tmp/tempo
       ports:
         - "3200:3200"   # tempo
-        # - "4317:4317"   # otlp grpc
-        - "4318:4318"   # otlp http
-        # - "6831:6831"   # trift compact
-        # - "6832:6832"   # trift binary
-        # - "14250:14250"  # ?
-        # - "14268:14268"  # jaeger ingest/ trift http
-
-
-  # And put them in an OTEL collector pipeline...
-#  otel-collector:
-#    image: otel/opentelemetry-collector:latest
-#    hostname: otel-collector
-#    command: [ "--config=/etc/otel-collector.yml" ]
-#    volumes:
-#      - ./otel/otel-collector.yml:/etc/otel-collector.yml
-
-# Generate fake traces... it looks there is a problem TODO: resolve 2022.10.06
-#  synthetic-load-generator:
-#    image: omnition/synthetic-load-generator:1.0.29
-#    volumes:
-#      - ./load-generator/load-generator.json:/etc/load-generator.json
-#    environment:
-#      - TOPOLOGY_FILE=/etc/load-generator.json
-#      - JAEGER_COLLECTOR_URL=http://otel-collector:14268
-
-  jaeger:
-    environment:
-      - COLLECTOR_ZIPKIN_HOST_PORT=9411
-    image: jaegertracing/all-in-one:latest
-    hostname: jaeger-host
-    ports:
-      - "0.0.0.0:6831:6831/udp"
-      - "0.0.0.0:14268:14268"
-      - "0.0.0.0:9411:9411"
-      - "16686:16686"
-    networks:
-      - default
-
-
+        - "4318:4318/tcp"   # otlp http
+        - "4318:4318/udp"   # otlp udp
+        - "6831:6831"   # otlp http
+        - "6832:6832"   # otlp http
 
 volumes:
   grafana-data:
